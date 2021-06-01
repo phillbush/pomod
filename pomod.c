@@ -30,10 +30,10 @@ enum Cycle {
 	LONGBREAK
 };
 
-static char *sockpath = NULL;
-static struct timespec pomodoro = {.tv_sec = POMODORO_SECS, .tv_nsec = 0};
-static struct timespec shortbreak = {.tv_sec = SHORTBREAK_SECS, .tv_nsec = 0};
-static struct timespec longbreak = {.tv_sec = LONGBREAK_SECS, .tv_nsec = 0};
+static char *sockpath;
+static struct timespec pomodoro = {.tv_sec = POMODORO_SECS};
+static struct timespec shortbreak = {.tv_sec = SHORTBREAK_SECS};
+static struct timespec longbreak = {.tv_sec = LONGBREAK_SECS};
 
 static void
 usage(void)
@@ -43,7 +43,7 @@ usage(void)
 }
 
 static int
-strtotime(char *s)
+gettime(char *s)
 {
 	char *ep;
 	long l;
@@ -68,13 +68,13 @@ parseargs(int argc, char *argv[])
 			sockpath = optarg;
 			break;
 		case 'l':
-			longbreak.tv_sec = strtotime(optarg);
+			longbreak.tv_sec = gettime(optarg);
 			break;
 		case 'p':
-			pomodoro.tv_sec = strtotime(optarg);
+			pomodoro.tv_sec = gettime(optarg);
 			break;
 		case 's':
-			shortbreak.tv_sec = strtotime(optarg);
+			shortbreak.tv_sec = gettime(optarg);
 			break;
 		default:
 			usage();
@@ -92,7 +92,7 @@ parseargs(int argc, char *argv[])
 }
 
 static int
-createsocket(char *path, int backlog)
+createsocket(const char *path, int backlog)
 {
 	struct sockaddr_un saddr;
 	int sd;

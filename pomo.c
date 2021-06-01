@@ -51,7 +51,7 @@ parseargs(int argc, char *argv[])
 }
 
 static int
-connectsocket(char *path)
+connectsocket(const char *path)
 {
 	struct sockaddr_un saddr;
 	int sd;

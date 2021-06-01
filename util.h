@@ -1,3 +1,5 @@
+#define INFOSIZ 128
+
 enum Command {
 	BYE   = 0,
 	STOP  = 'p',

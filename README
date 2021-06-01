@@ -1,0 +1,71 @@
+POMOD(1)                         X Notes                        POMOD(1)
+
+NAME
+       pomod - pomodoro daemon
+
+SYNOPSIS
+       pomod [-S socket] [-l time] [-p time] [-s time]
+       pomo [-S socket] [start|stop|info]
+
+DESCRIPTION
+       pomod is a timer daemon that implements the pomodoro technique.
+       The pomod command is the server; it times pomodoro and break
+       cycles while waiting for commands from the client.  The pomo
+       command is the client; it send commands to the server for
+       controling the timer.
+
+       When called, the pomod command begins with the timer stopped and
+       waits for the client to start it.  Once started, it begins a
+       pomodoro.  After a pomodoro, a break begins.  After each four
+       pomodoros, the break is a long break, otherwise it is a short
+       break.  By default, a pomodoro lasts 25 minutes; a short break
+       lasts 5 minutes and a long break lasts 30 minutes.  When the
+       cycle changes (from a pomodoro to a short break, for example),
+       the name of the new step is printed to stdout.
+
+       The pomo command has three subcommands, which control the server
+       or get information from it.  The following subcommands are known:
+
+       start  Begins a new pomodoro.
+
+       stop   Stop the timer.
+
+       info   Get the current cycle from the server and print the timer
+              in minutes and seconds.
+
+       The options for both commands are as follows:
+
+       -S socket
+              The path to the socket.  By default the socket is
+              /tmp/pomodoro.UID
+
+       The options for pomod are as follows:
+
+       -l time
+              Time in minutes for the long break.
+
+       -p time
+              Time in minutes for the pomodoro.
+
+       -s time
+              Time in minutes for the short break.
+
+FILES
+       ./pomod.c
+              Code for the server.
+
+       ./pomo.c
+              Code for the client.
+
+       ./util.[ch]
+              Code shared by server and client.
+
+       /tmp/pomodoro.UID
+              Socket for the user.
+
+LICENSE
+       This software is in public domain and is provided AS IS,
+       with NO WARRANTY.
+
+SEE ALSO
+       https://en.wikipedia.org/wiki/Pomodoro_Technique

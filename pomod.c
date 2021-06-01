@@ -13,6 +13,7 @@
 
 #define BACKLOG     5
 #define SECONDS     60          /* seconds in a minute */
+#define MINUTES     60          /* minutes in a hour */
 #define MILISECONDS 1000        /* miliseconds in a second */
 #define NANOPERMILI 1000000
 #define MAXCLIENTS  10
@@ -34,6 +35,12 @@ static char *sockpath;
 static struct timespec pomodoro = {.tv_sec = POMODORO_SECS};
 static struct timespec shortbreak = {.tv_sec = SHORTBREAK_SECS};
 static struct timespec longbreak = {.tv_sec = LONGBREAK_SECS};
+static char *cyclenames[] = {
+	[STOPPED]    = "stopped",
+	[POMODORO]   = "pomodoro",
+	[SHORTBREAK] = "shortbreak",
+	[LONGBREAK]  = "longbreak"
+};
 
 static void
 usage(void)
@@ -158,21 +165,50 @@ gettimespec(struct timespec *ts)
 static void
 notify(int cycle)
 {
+	printf("%s\n", cyclenames[cycle]);
+	fflush(stdout);
+}
+
+static void
+timesub(struct timespec *a, struct timespec *b, struct timespec *c)
+{
+	timespecsub(a, b, c);
+	if (c->tv_sec < 0) {
+		c->tv_sec = 0;
+	}
+	if (c->tv_nsec < 0) {
+		c->tv_nsec = 0;
+	}
+}
+
+static void
+info(int fd, struct timespec *stoptime, int cycle)
+{
+	struct timespec now, diff;
+	time_t mins, secs;
+	char buf[INFOSIZ];
+
+	gettimespec(&now);
+	timesub(stoptime, &now, &diff);
 	switch (cycle) {
-	case STOPPED:
-		printf("stopped\n");
-		break;
 	case POMODORO:
-		printf("pomodoro\n");
+		mins = (pomodoro.tv_sec - diff.tv_sec) / SECONDS;
+		secs = (pomodoro.tv_sec - diff.tv_sec) - mins;
 		break;
 	case SHORTBREAK:
-		printf("shortbreak\n");
+		mins = (shortbreak.tv_sec - diff.tv_sec) / SECONDS;
+		secs = (shortbreak.tv_sec - diff.tv_sec) - mins;
 		break;
 	case LONGBREAK:
-		printf("longbreak\n");
+		mins = (longbreak.tv_sec - diff.tv_sec) / SECONDS;
+		secs = (longbreak.tv_sec - diff.tv_sec) - mins;
 		break;
 	}
-	fflush(stdout);
+	if (cycle == STOPPED)
+		snprintf(buf, INFOSIZ, "%s", cyclenames[cycle]);
+	else
+		snprintf(buf, INFOSIZ, "%s: %02lld:%02lld", cyclenames[cycle], (long long int)mins, (long long int)secs);
+	write(fd, buf, INFOSIZ);
 }
 
 static int
@@ -181,13 +217,7 @@ gettimeout(struct timespec *stoptime)
 	struct timespec now, diff;
 
 	gettimespec(&now);
-	timespecsub(stoptime, &now, &diff);
-	if (diff.tv_sec < 0) {
-		diff.tv_sec = 0;
-	}
-	if (diff.tv_nsec < 0) {
-		diff.tv_nsec = 0;
-	}
+	timesub(stoptime, &now, &diff);
 	return MILISECONDS * diff.tv_sec + diff.tv_nsec / NANOPERMILI;
 }
 
@@ -197,7 +227,6 @@ run(int sd)
 	struct pollfd pfds[MAXCLIENTS + 1];
 	struct timespec now, stoptime;
 	size_t i;
-	int infofd;
 	int timeout;
 	int nclients;
 	int cycle;
@@ -212,7 +241,6 @@ run(int sd)
 		pfds[i].fd = -1;
 	cycle = STOPPED;
 	pomocount = 0;
-	infofd = -1;
 	for (;;) {
 		if ((n = poll(pfds, nclients + 1, timeout)) == -1)
 			err(1, "poll");
@@ -243,7 +271,7 @@ run(int sd)
 					cycle = STOPPED;
 					break;
 				case INFO:
-					infofd = pfds[i].fd;
+					info(pfds[i].fd, &stoptime, cycle);
 					break;
 				}
 			}
@@ -290,7 +318,6 @@ run(int sd)
 			}
 			break;
 		}
-		infofd = -1;
 	}
 }
 

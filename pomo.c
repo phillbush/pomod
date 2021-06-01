@@ -54,16 +54,16 @@ static int
 connectsocket(const char *path)
 {
 	struct sockaddr_un saddr;
-	int sd;
+	int fd;
 
-	if ((sd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1)
 		err(1, "socket");
 	memset(&saddr, 0, sizeof saddr);
 	saddr.sun_family = AF_UNIX;
 	strncpy(saddr.sun_path, path, (sizeof saddr.sun_path) - 1);
-	if (connect(sd, (struct sockaddr *)&saddr, sizeof saddr) == -1)
+	if (connect(fd, (struct sockaddr *)&saddr, sizeof saddr) == -1)
 		err(1, "connect");
-	return sd;
+	return fd;
 }
 
 static void
@@ -74,16 +74,30 @@ sendcommand(char cmd, int fd)
 	}
 }
 
+static void
+printinfo(int fd)
+{
+	int n;
+	char buf[INFOSIZ];
+
+	if ((n = read(fd, buf, INFOSIZ)) != INFOSIZ)
+		errx(1, "could not get info");
+	buf[INFOSIZ - 1] = '\0';
+	printf("%s\n", buf);
+}
+
 int
 main(int argc, char *argv[])
 {
-	int sd;                         /* socket file descriptor */
+	int fd;                         /* socket file descriptor */
 	char cmd;
 
 	setprogname(argv[0]);
 	cmd = parseargs(argc, argv);
-	sd = connectsocket(sockpath);
-	sendcommand(cmd, sd);
-	close(sd);
+	fd = connectsocket(sockpath);
+	sendcommand(cmd, fd);
+	if (cmd == INFO)
+		printinfo(fd);
+	close(fd);
 	return 0;
 }

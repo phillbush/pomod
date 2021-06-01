@@ -1,6 +1,4 @@
-CFLAGS = -g -O0 -Wall -Wextra ${INCS} ${CPPFLAGS}
-LDFLAGS = ${LIBS}
-CC = cc
+include config.mk
 
 SRCS = pomod.c pomo.c util.c
 OBJS = ${SRCS:.c=.o}
@@ -18,6 +16,14 @@ pomod.o: util.h
 
 .c.o:
 	${CC} ${CFLAGS} -c $<
+
+install: all
+	install -D -m 755 pomod ${DESTDIR}${PREFIX}/bin/${PROG}
+	install -D -m 755 pomo ${DESTDIR}${PREFIX}/bin/${PROG}
+
+uninstall:
+	rm -f ${DESTDIR}${PREFIX}/bin/pomod
+	rm -f ${DESTDIR}${PREFIX}/bin/pomo
 
 clean:
 	-rm ${OBJS} pomod pomo

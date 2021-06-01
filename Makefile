@@ -1,4 +1,6 @@
-include config.mk
+CFLAGS = -g -O0 -Wall -Wextra ${INCS} ${CPPFLAGS}
+LDFLAGS = ${LIBS}
+CC = cc
 
 SRCS = pomod.c pomo.c util.c
 OBJS = ${SRCS:.c=.o}

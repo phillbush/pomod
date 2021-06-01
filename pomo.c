@@ -67,12 +67,9 @@ connectsocket(const char *path)
 }
 
 static void
-sendcommand(int cmd, int fd)
+sendcommand(char cmd, int fd)
 {
-	char c;
-
-	c = cmd;
-	if (write(fd, &c, 1) == -1) {
+	if (write(fd, &cmd, 1) == -1) {
 		err(1, "write");
 	}
 }
@@ -80,8 +77,8 @@ sendcommand(int cmd, int fd)
 int
 main(int argc, char *argv[])
 {
-	int cmd;
 	int sd;                         /* socket file descriptor */
+	char cmd;
 
 	setprogname(argv[0]);
 	cmd = parseargs(argc, argv);

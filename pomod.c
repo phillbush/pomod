@@ -193,15 +193,15 @@ info(int fd, struct timespec *stoptime, int cycle)
 	switch (cycle) {
 	case POMODORO:
 		mins = (pomodoro.tv_sec - diff.tv_sec) / SECONDS;
-		secs = (pomodoro.tv_sec - diff.tv_sec) - mins;
+		secs = (pomodoro.tv_sec - diff.tv_sec) % SECONDS;
 		break;
 	case SHORTBREAK:
 		mins = (shortbreak.tv_sec - diff.tv_sec) / SECONDS;
-		secs = (shortbreak.tv_sec - diff.tv_sec) - mins;
+		secs = (shortbreak.tv_sec - diff.tv_sec) % SECONDS;
 		break;
 	case LONGBREAK:
 		mins = (longbreak.tv_sec - diff.tv_sec) / SECONDS;
-		secs = (longbreak.tv_sec - diff.tv_sec) - mins;
+		secs = (longbreak.tv_sec - diff.tv_sec) % SECONDS;
 		break;
 	}
 	if (cycle == STOPPED)
@@ -228,12 +228,10 @@ run(int sd)
 	struct timespec now, stoptime;
 	size_t i;
 	int timeout;
-	int nclients;
 	int cycle;
 	int pomocount;
 	int n;
 
-	nclients = 0;
 	timeout = -1;
 	pfds[0].fd = sd;
 	pfds[0].events = POLLIN;
@@ -242,24 +240,19 @@ run(int sd)
 	cycle = STOPPED;
 	pomocount = 0;
 	for (;;) {
-		if ((n = poll(pfds, nclients + 1, timeout)) == -1)
+		if ((n = poll(pfds, MAXCLIENTS, timeout)) == -1)
 			err(1, "poll");
 		if (n > 0) {
-			if (pfds[0].revents & POLLHUP) {        /* socket has been disconnected */
+			if (pfds[0].revents & POLLHUP)          /* socket has been disconnected */
 				return;
-			}
-			if (pfds[0].revents & POLLIN) {         /* handle new client */
-				if (acceptclient(pfds, MAXCLIENTS)) {
-					nclients++;
-				}
-			}
+			if (pfds[0].revents & POLLIN)           /* handle new client */
+				acceptclient(pfds, MAXCLIENTS);
 			for (i = 1; i <= MAXCLIENTS; i++) {     /* handle existing client */
 				if (pfds[i].fd <= 0 || !(pfds[i].events & POLLIN))
 					continue;
 				switch (handleclient(pfds[i].fd)) {
 				case BYE:
 					pfds[i].fd = -1;
-					nclients--;
 					break;
 				case START:
 					pomocount = 0;

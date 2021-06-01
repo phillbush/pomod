@@ -240,7 +240,7 @@ run(int sd)
 	cycle = STOPPED;
 	pomocount = 0;
 	for (;;) {
-		if ((n = poll(pfds, MAXCLIENTS, timeout)) == -1)
+		if ((n = poll(pfds, MAXCLIENTS + 1, timeout)) == -1)
 			err(1, "poll");
 		if (n > 0) {
 			if (pfds[0].revents & POLLHUP)          /* socket has been disconnected */

@@ -5,7 +5,6 @@ enum Command {
 	STOP  = 'p',
 	START = 's',
 	INFO  = 'i',
-	WATCH = 'w'
 };
 
 char *getsockpath(void);

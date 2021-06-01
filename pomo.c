@@ -44,8 +44,6 @@ parseargs(int argc, char *argv[])
 		return START;
 	else if (strcasecmp(*argv, "info") == 0)
 		return INFO;
-	else if (strcasecmp(*argv, "watch") == 0)
-		return WATCH;
 	usage();
 	return 0;                       /* NOTREACHED */
 }

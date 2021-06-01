@@ -80,8 +80,7 @@ printinfo(int fd)
 
 	if ((n = read(fd, buf, INFOSIZ)) != INFOSIZ)
 		errx(1, "could not get info");
-	buf[INFOSIZ - 1] = '\0';
-	printf("%s\n", buf);
+	printf("%s: %02u:%02u\n", getcyclename(buf[CYCLE]), buf[MIN], buf[SEC]);
 }
 
 int

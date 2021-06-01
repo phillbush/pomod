@@ -5,6 +5,7 @@
 #include <err.h>
 #include <limits.h>
 #include <poll.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,23 +25,10 @@ enum Duration {
 	LONGBREAK_SECS  = SECONDS * 30
 };
 
-enum Cycle {
-	STOPPED,
-	POMODORO,
-	SHORTBREAK,
-	LONGBREAK
-};
-
 static char *sockpath;
 static struct timespec pomodoro = {.tv_sec = POMODORO_SECS};
 static struct timespec shortbreak = {.tv_sec = SHORTBREAK_SECS};
 static struct timespec longbreak = {.tv_sec = LONGBREAK_SECS};
-static char *cyclenames[] = {
-	[STOPPED]    = "stopped",
-	[POMODORO]   = "pomodoro",
-	[SHORTBREAK] = "shortbreak",
-	[LONGBREAK]  = "longbreak"
-};
 
 static void
 usage(void)
@@ -163,9 +151,9 @@ gettimespec(struct timespec *ts)
 }
 
 static void
-notify(int cycle)
+notify(char cycle)
 {
-	printf("%s\n", cyclenames[cycle]);
+	printf("%s\n", getcyclename(cycle));
 	fflush(stdout);
 }
 
@@ -182,32 +170,29 @@ timesub(struct timespec *a, struct timespec *b, struct timespec *c)
 }
 
 static void
-info(int fd, struct timespec *stoptime, int cycle)
+info(int fd, struct timespec *stoptime, char cycle)
 {
 	struct timespec now, diff;
-	time_t mins, secs;
-	char buf[INFOSIZ];
+	uint8_t buf[INFOSIZ];
 
 	gettimespec(&now);
 	timesub(stoptime, &now, &diff);
+	buf[CYCLE] = cycle;
+	buf[MIN] = buf[SEC] = 0;
 	switch (cycle) {
 	case POMODORO:
-		mins = (pomodoro.tv_sec - diff.tv_sec) / SECONDS;
-		secs = (pomodoro.tv_sec - diff.tv_sec) % SECONDS;
+		buf[MIN] = (uint8_t)(pomodoro.tv_sec - diff.tv_sec) / SECONDS;
+		buf[SEC] = (uint8_t)(pomodoro.tv_sec - diff.tv_sec) % SECONDS;
 		break;
 	case SHORTBREAK:
-		mins = (shortbreak.tv_sec - diff.tv_sec) / SECONDS;
-		secs = (shortbreak.tv_sec - diff.tv_sec) % SECONDS;
+		buf[MIN] = (uint8_t)(shortbreak.tv_sec - diff.tv_sec) / SECONDS;
+		buf[SEC] = (uint8_t)(shortbreak.tv_sec - diff.tv_sec) % SECONDS;
 		break;
 	case LONGBREAK:
-		mins = (longbreak.tv_sec - diff.tv_sec) / SECONDS;
-		secs = (longbreak.tv_sec - diff.tv_sec) % SECONDS;
+		buf[MIN] = (uint8_t)(longbreak.tv_sec - diff.tv_sec) / SECONDS;
+		buf[SEC] = (uint8_t)(longbreak.tv_sec - diff.tv_sec) % SECONDS;
 		break;
 	}
-	if (cycle == STOPPED)
-		snprintf(buf, INFOSIZ, "%s", cyclenames[cycle]);
-	else
-		snprintf(buf, INFOSIZ, "%s: %02lld:%02lld", cyclenames[cycle], (long long int)mins, (long long int)secs);
 	write(fd, buf, INFOSIZ);
 }
 
@@ -228,9 +213,9 @@ run(int sd)
 	struct timespec now, stoptime;
 	size_t i;
 	int timeout;
-	int cycle;
 	int pomocount;
 	int n;
+	char cycle;
 
 	timeout = -1;
 	pfds[0].fd = sd;

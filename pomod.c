@@ -181,16 +181,16 @@ info(int fd, struct timespec *stoptime, char cycle)
 	buf[MIN] = buf[SEC] = 0;
 	switch (cycle) {
 	case POMODORO:
-		buf[MIN] = (uint8_t)(pomodoro.tv_sec - diff.tv_sec) / SECONDS;
-		buf[SEC] = (uint8_t)(pomodoro.tv_sec - diff.tv_sec) % SECONDS;
+		buf[MIN] = (uint8_t)((pomodoro.tv_sec - diff.tv_sec) / SECONDS);
+		buf[SEC] = (uint8_t)((pomodoro.tv_sec - diff.tv_sec) % SECONDS);
 		break;
 	case SHORTBREAK:
-		buf[MIN] = (uint8_t)(shortbreak.tv_sec - diff.tv_sec) / SECONDS;
-		buf[SEC] = (uint8_t)(shortbreak.tv_sec - diff.tv_sec) % SECONDS;
+		buf[MIN] = (uint8_t)((shortbreak.tv_sec - diff.tv_sec) / SECONDS);
+		buf[SEC] = (uint8_t)((shortbreak.tv_sec - diff.tv_sec) % SECONDS);
 		break;
 	case LONGBREAK:
-		buf[MIN] = (uint8_t)(longbreak.tv_sec - diff.tv_sec) / SECONDS;
-		buf[SEC] = (uint8_t)(longbreak.tv_sec - diff.tv_sec) % SECONDS;
+		buf[MIN] = (uint8_t)((longbreak.tv_sec - diff.tv_sec) / SECONDS);
+		buf[SEC] = (uint8_t)((longbreak.tv_sec - diff.tv_sec) % SECONDS);
 		break;
 	}
 	write(fd, buf, INFOSIZ);

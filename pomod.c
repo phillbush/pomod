@@ -262,38 +262,32 @@ run(int sd)
 		case POMODORO:
 			if (timespeccmp(&now, &stoptime, >=)) {
 				pomocount++;
+				gettimespec(&stoptime);
 				if (pomocount < 4) {
 					notify(cycle = SHORTBREAK);
 					stoptime.tv_sec += shortbreak.tv_sec;
-					timeout = gettimeout(&stoptime);
 				} else {
 					pomocount = 0;
 					notify(cycle = LONGBREAK);
 					stoptime.tv_sec += longbreak.tv_sec;
-					timeout = gettimeout(&stoptime);
 				}
-			} else {
-				timeout = gettimeout(&stoptime);
 			}
+			timeout = gettimeout(&stoptime);
 			break;
 		case SHORTBREAK:
 			if (timespeccmp(&now, &stoptime, >)) {
 				notify(cycle = POMODORO);
 				stoptime.tv_sec += pomodoro.tv_sec;
-				timeout = gettimeout(&stoptime);
-			} else {
-				timeout = gettimeout(&stoptime);
 			}
+			timeout = gettimeout(&stoptime);
 			break;
 		case LONGBREAK:
 			pomocount = 0;
 			if (timespeccmp(&now, &stoptime, >)) {
 				notify(cycle = POMODORO);
 				stoptime.tv_sec += pomodoro.tv_sec;
-				timeout = gettimeout(&stoptime);
-			} else {
-				timeout = gettimeout(&stoptime);
 			}
+			timeout = gettimeout(&stoptime);
 			break;
 		}
 	}

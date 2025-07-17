@@ -230,13 +230,27 @@ run(int sd)
 		if (n > 0) {
 			if (pfds[0].revents & POLLHUP)          /* socket has been disconnected */
 				return;
-			if (pfds[0].revents & POLLIN)           /* handle new client */
-				acceptclient(pfds, MAXCLIENTS);
+			if (pfds[0].revents & POLLERR) {        /* an error occurred */
+				err(1, "poll");
+				return;
+			}
+			if (pfds[0].revents & POLLIN) {          /* handle new client */
+				if (acceptclient(pfds, MAXCLIENTS) < 1)
+					warn("too many clients");
+			}
+
 			for (i = 1; i <= MAXCLIENTS; i++) {     /* handle existing client */
-				if (pfds[i].fd <= 0 || !(pfds[i].events & POLLIN))
+				if (pfds[i].fd <= 0 || !(pfds[i].events & (POLLIN|POLLHUP)))
 					continue;
+				if (pfds[i].events & POLLHUP) {
+					close(pfds[i].fd);
+					pfds[i].fd = -1;
+					continue;
+				}
+
 				switch (handleclient(pfds[i].fd)) {
 				case BYE:
+					close(pfds[i].fd);
 					pfds[i].fd = -1;
 					break;
 				case START:

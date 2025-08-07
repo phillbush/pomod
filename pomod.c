@@ -181,16 +181,16 @@ info(int fd, struct timespec *stoptime, char cycle)
 	buf[MIN] = buf[SEC] = 0;
 	switch (cycle) {
 	case POMODORO:
-		buf[MIN] = (uint8_t)(pomodoro.tv_sec - diff.tv_sec) / SECONDS;
-		buf[SEC] = (uint8_t)(pomodoro.tv_sec - diff.tv_sec) % SECONDS;
+		buf[MIN] = (uint8_t)((pomodoro.tv_sec - diff.tv_sec) / SECONDS);
+		buf[SEC] = (uint8_t)((pomodoro.tv_sec - diff.tv_sec) % SECONDS);
 		break;
 	case SHORTBREAK:
-		buf[MIN] = (uint8_t)(shortbreak.tv_sec - diff.tv_sec) / SECONDS;
-		buf[SEC] = (uint8_t)(shortbreak.tv_sec - diff.tv_sec) % SECONDS;
+		buf[MIN] = (uint8_t)((shortbreak.tv_sec - diff.tv_sec) / SECONDS);
+		buf[SEC] = (uint8_t)((shortbreak.tv_sec - diff.tv_sec) % SECONDS);
 		break;
 	case LONGBREAK:
-		buf[MIN] = (uint8_t)(longbreak.tv_sec - diff.tv_sec) / SECONDS;
-		buf[SEC] = (uint8_t)(longbreak.tv_sec - diff.tv_sec) % SECONDS;
+		buf[MIN] = (uint8_t)((longbreak.tv_sec - diff.tv_sec) / SECONDS);
+		buf[SEC] = (uint8_t)((longbreak.tv_sec - diff.tv_sec) % SECONDS);
 		break;
 	}
 	write(fd, buf, INFOSIZ);
@@ -230,13 +230,27 @@ run(int sd)
 		if (n > 0) {
 			if (pfds[0].revents & POLLHUP)          /* socket has been disconnected */
 				return;
-			if (pfds[0].revents & POLLIN)           /* handle new client */
-				acceptclient(pfds, MAXCLIENTS);
+			if (pfds[0].revents & POLLERR) {        /* an error occurred */
+				err(1, "poll");
+				return;
+			}
+			if (pfds[0].revents & POLLIN) {          /* handle new client */
+				if (acceptclient(pfds, MAXCLIENTS) < 1)
+					warn("too many clients");
+			}
+
 			for (i = 1; i <= MAXCLIENTS; i++) {     /* handle existing client */
-				if (pfds[i].fd <= 0 || !(pfds[i].events & POLLIN))
+				if (pfds[i].fd <= 0 || !(pfds[i].events & (POLLIN|POLLHUP)))
 					continue;
+				if (pfds[i].events & POLLHUP) {
+					close(pfds[i].fd);
+					pfds[i].fd = -1;
+					continue;
+				}
+
 				switch (handleclient(pfds[i].fd)) {
 				case BYE:
+					close(pfds[i].fd);
 					pfds[i].fd = -1;
 					break;
 				case START:
@@ -262,38 +276,32 @@ run(int sd)
 		case POMODORO:
 			if (timespeccmp(&now, &stoptime, >=)) {
 				pomocount++;
+				gettimespec(&stoptime);
 				if (pomocount < 4) {
 					notify(cycle = SHORTBREAK);
 					stoptime.tv_sec += shortbreak.tv_sec;
-					timeout = gettimeout(&stoptime);
 				} else {
 					pomocount = 0;
 					notify(cycle = LONGBREAK);
 					stoptime.tv_sec += longbreak.tv_sec;
-					timeout = gettimeout(&stoptime);
 				}
-			} else {
-				timeout = gettimeout(&stoptime);
 			}
+			timeout = gettimeout(&stoptime);
 			break;
 		case SHORTBREAK:
 			if (timespeccmp(&now, &stoptime, >)) {
 				notify(cycle = POMODORO);
 				stoptime.tv_sec += pomodoro.tv_sec;
-				timeout = gettimeout(&stoptime);
-			} else {
-				timeout = gettimeout(&stoptime);
 			}
+			timeout = gettimeout(&stoptime);
 			break;
 		case LONGBREAK:
 			pomocount = 0;
 			if (timespeccmp(&now, &stoptime, >)) {
 				notify(cycle = POMODORO);
 				stoptime.tv_sec += pomodoro.tv_sec;
-				timeout = gettimeout(&stoptime);
-			} else {
-				timeout = gettimeout(&stoptime);
 			}
+			timeout = gettimeout(&stoptime);
 			break;
 		}
 	}
